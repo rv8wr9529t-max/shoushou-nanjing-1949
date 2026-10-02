@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#292724">
+<title>南京·1949 城防战</title>
+<style>
+:root{--ink:#29241e;--paper:#f3e8d1;--paper2:#e8d9bb;--line:#b6a078;--dark:#292724;--blue:#3f6f96;--red:#b05348;--neutral:#a99d77;--gold:#b58134;--muted:#756b5b;--water:#7f9db0;--hill:#a8a06a}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#d4c19e;color:var(--ink);font:14px/1.45 system-ui,"Microsoft YaHei",sans-serif}
+button,input{-webkit-tap-highlight-color:transparent;font-family:inherit}
+[hidden]{display:none!important}
+
+/* ---------- 顶栏 ---------- */
+.top{background:var(--dark);color:#f6ead3;padding:10px 14px;display:flex;justify-content:space-between;gap:14px;align-items:center;box-shadow:0 2px 8px #0005}
+.brand{font:bold 22px Georgia,serif;letter-spacing:.3px}
+.subtitle{color:#d5bb85;font-size:12px}
+.hud{display:flex;flex-wrap:wrap;gap:10px;font-size:13px}
+.hud b{color:#f8d590}
+
+/* ---------- 主布局 ---------- */
+.shell{max-width:1500px;margin:auto;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:12px;align-items:start}
+.map-panel,.panel{background:var(--paper);border:1px solid var(--line);box-shadow:0 3px 14px #59452e33}
+.map-panel{position:relative;overflow:hidden;align-self:start}
+.map-heading{position:absolute;z-index:2;left:14px;top:10px;font:24px Georgia,serif;color:#3b3024;text-shadow:0 1px #f6ecd9;pointer-events:none}
+.map-heading small{display:block;font:12px system-ui,sans-serif;color:#6b6153;margin-top:2px}
+.stage{width:100%;background:#cfd8dc;overflow:hidden}
+.arena{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair;background:#cfd8dc;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.map-legend{position:absolute;bottom:8px;left:8px;background:#f5ead5e8;border:1px solid #b9a47f;padding:5px 7px;font-size:11px;z-index:2;line-height:1.6;pointer-events:none}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:-1px}
+.aim-cancel{position:absolute;right:10px;top:10px;z-index:7;background:#8f4038;color:#fff;border-color:#74302c;padding:9px 13px;min-height:0}
+
+/* ---------- 侧栏 ---------- */
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{padding:13px}
+.panel h2{font-size:17px;margin:0 0 9px;border-bottom:1px solid #cdbb99;padding-bottom:7px}
+.brief{background:#eee0c2;border-left:4px solid var(--gold);padding:9px;line-height:1.55}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat{background:var(--paper2);border:1px solid #d0bd98;padding:7px}
+.stat span{display:block;color:var(--muted);font-size:12px}
+.stat strong{display:block;font-size:17px}
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+button{border:1px solid #a28c65;background:#fff8e9;color:var(--ink);border-radius:8px;padding:9px 6px;font-weight:700;cursor:pointer;font-size:13px;transition:filter .12s}
+button:active{filter:brightness(.92)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.mode.active{background:#2f4a66;color:#fff;border-color:#20394e}
+.mode.locked{opacity:.45}
+.mode small{display:block;font-size:10px;font-weight:400;margin-top:1px}
+.range-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-top:10px;color:var(--muted);font-size:12px}
+.range-row input{width:100%;height:30px;accent-color:#2f4a66;touch-action:pan-x}
+.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.primary{background:#2f4a66;color:#fff;border-color:#20394e}
+.danger{background:#8f4038;color:#fff;border-color:#74302c}
+.quiet{background:#e0d1b2}
+.wide{grid-column:1/-1}
+.help{font-size:12px;line-height:1.58;color:#62584b;margin:9px 0 0}
+.log{height:158px;overflow:auto;background:#302c27;color:#e8dac0;padding:8px;font-size:12px;line-height:1.55;-webkit-overflow-scrolling:touch}
+.log div{border-bottom:1px solid #ffffff17;padding:2px 0}
+.selected{display:none;margin-top:8px}
+.selected.show{display:block}
+.selected-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.status{font-size:12px;color:var(--muted);margin-top:8px}
+.zone{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed #cdbb99}
+.zone b{font-weight:700}
+.game-over{position:absolute;inset:0;background:#211d1bd9;color:#fff1d8;display:none;align-items:center;justify-content:center;text-align:center;padding:18px;z-index:5;overflow:auto}
+.game-over.show{display:flex}
+.game-over h2{font:32px Georgia,serif;margin:0 0 7px}
+.game-over p{margin:0 0 15px;color:#ead8b8;line-height:1.7}
+.game-over button{background:#f3dfb8;color:#302820}
+.toast{position:absolute;left:50%;top:58px;transform:translateX(-50%);background:#292724e8;color:#f8e9cc;padding:8px 12px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:6;font-size:12px;max-width:86%;text-align:center}
+.toast.show{opacity:1}
+
+/* ---------- 平板 ---------- */
+@media(max-width:1150px){
+  .shell{grid-template-columns:1fr}
+  .side{display:grid;grid-template-columns:1fr 1fr}
+  .panel:first-child,.panel:last-child{grid-column:1/-1}
+}
+
+/* ---------- 手机 ---------- */
+@media(max-width:760px){
+  .top{flex-direction:column;align-items:stretch;gap:7px;padding:9px 11px}
+  .brand{font-size:18px}
+  .subtitle{font-size:11px}
+  .hud{flex-wrap:nowrap;overflow-x:auto;gap:12px;font-size:12px;padding-bottom:3px;scrollbar-width:none}
+  .hud::-webkit-scrollbar{display:none}
+  .hud span{flex:0 0 auto;white-space:nowrap}
+
+  .shell{padding:8px;gap:8px}
+  .side{display:flex;flex-direction:column;gap:8px}
+  .panel{padding:11px}
+  .panel h2{font-size:16px;margin-bottom:8px}
+
+  .map-heading{font-size:17px;left:10px;top:8px}
+  .map-heading small{font-size:10px}
+  .map-legend{font-size:10px;bottom:6px;left:6px;padding:4px 6px}
+  .aim-cancel{padding:9px 12px;font-size:13px;right:8px;top:8px}
+
+  /* 触屏按钮放大 */
+  button{min-height:48px;font-size:15px;padding:11px 8px;border-radius:9px}
+  .modes{grid-template-columns:1fr 1fr;gap:8px}
+  .mode small{font-size:11px}
+  .toolbar{gap:8px}
+  .range-row{font-size:13px;gap:6px}
+  .range-row input{height:34px}
+
+  .stats{gap:6px}
+  .stat{padding:8px}
+  .stat strong{font-size:16px}
+  .log{height:130px}
+  .game-over h2{font-size:22px}
+  .game-over p{font-size:12.5px}
+  .game-over button{min-height:48px;font-size:15px}
+  .toast{top:auto;bottom:14px;font-size:13px;padding:10px 14px}
+  .brief,.help{font-size:12.5px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div><div class="brand">南京 · 1949 城防战</div><div class="subtitle">共军三路渡江攻城 · 国军据城固守 · 伺机反攻</div></div>
+  <div class="hud">
+    <span><b id="clockLabel" style="font-weight:400">倒计时</b> <b id="clock">02:30</b></span>
+    <span>城内 <b id="cityPct">0%</b></span>
+    <span>城墙 <b id="wallPct">0%</b></span>
+    <span>突破口 <b id="breaches">0</b></span>
+    <span>共军兵力 <b id="redArmy">0</b></span>
+    <span>反攻令 <b id="counterOrders">0</b></span>
+    <span>指令 <b id="commandCount">0</b>/6</span>
+  </div>
+</header>
+<main class="shell">
+<section class="map-panel">
+  <div class="map-heading">南京 · 明城墙内外<small>长江自西南向东北流过城北</small></div>
+  <div class="stage"><canvas id="arena" class="arena" width="1104" height="660"></canvas></div>
+  <button id="cancelAim" class="aim-cancel" hidden>取消选点</button>
+  <div class="toast" id="toast"></div>
+  <div class="map-legend">
+    <span class="dot" style="background:#3f6f96"></span>国军　
+    <span class="dot" style="background:#b05348"></span>共军　
+    <span class="dot" style="background:#a99d77"></span>中立　
+    <span class="dot" style="background:#7f9db0"></span>江面　
+    <span class="dot" style="background:#6b5a3a"></span>城墙　
+    <span class="dot" style="background:#c2ab7d"></span>渡口浮桥
+  </div>
+  <div class="game-over" id="gameOver"><div><h2 id="endTitle">战役结束</h2><p id="endText"></p><button id="restartOverlay">重新开局</button></div></div>
+</section>
+<aside class="side">
+
+<section class="panel">
+  <h2>守城指挥</h2>
+  <div class="brief">手机上：<b>轻点蓝色地块</b>选起点 → <b>再点地图任意处</b>确定方向即可下令；也可直接从蓝色地块<b>按住拖动</b>画线。桌面端仍是按住拖动。</div>
+  <div class="modes" style="margin-top:9px">
+    <button class="mode active" data-mode="hold">固守<small>加固城墙</small></button>
+    <button class="mode" data-mode="reinforce">增援<small>补充兵力</small></button>
+    <button class="mode" data-mode="advance">推进<small>前出夺点</small></button>
+    <button class="mode locked" data-mode="counter">反攻<small>需反攻令</small></button>
+  </div>
+  <div class="range-row"><span>投入强度</span><input id="commit" type="range" min="20" max="85" value="55"><b id="commitValue">55%</b></div>
+  <div class="toolbar">
+    <button id="pauseBtn" class="primary">暂停</button>
+    <button id="speedBtn" class="quiet">速度 1x</button>
+    <button id="clearBtn" class="quiet wide">清除全部指令</button>
+  </div>
+  <p class="help">固守：沿线的城墙地块防御与守备兵力持续上升。增援：沿线的城内兵力快速增长。推进：朝拖动方向压出去，可夺回城门与渡口。反攻：01:15 后获得反攻令（共 2 道），突击力极强、附带预备队上城并压制共军攻势 20 秒。<b>南京一旦沦陷不会结束：残部转入巷战，打到最后一人被歼才算彻底结束。</b>速度按钮只加快推演，不缩短两分半的比赛时间。</p>
+</section>
+
+<section class="panel">
+  <h2>战局</h2>
+  <div class="stats">
+    <div class="stat"><span>城内控制（国军）</span><strong id="blueCityPct">0%</strong></div>
+    <div class="stat"><span>城内控制（共军）</span><strong id="redCityPct">0%</strong></div>
+    <div class="stat"><span>城墙完好</span><strong id="wallOk">100%</strong></div>
+    <div class="stat"><span>突破口</span><strong id="breachCount">0</strong></div>
+    <div class="stat"><span>残部据点</span><strong id="blueCellsLeft">-</strong></div>
+    <div class="stat"><span>共军兵力</span><strong id="redArmyPanel">0</strong></div>
+  </div>
+  <div style="margin-top:9px">
+    <div class="zone"><span>浦口渡口（北岸集结）</span><b id="z0">在敌手</b></div>
+    <div class="zone"><span>紫金山·汤山（东路）</span><b id="z1">在敌手</b></div>
+    <div class="zone"><span>雨花台·安德门（南路）</span><b id="z2">在敌手</b></div>
+  </div>
+  <div class="status" id="statusText">共军正在渡江，先加固城门与渡口。</div>
+</section>
+
+<section class="panel">
+  <h2 id="inspectTitle">地块情报</h2>
+  <div id="inspectInfo" class="brief">点击任意地块查看控制方、兵力、防御与地形。点击不会改变战局。</div>
+  <div id="inspectBox" class="selected"><div class="selected-grid">
+    <div class="stat"><span>控制方</span><strong id="inspectOwner">-</strong></div>
+    <div class="stat"><span>兵力</span><strong id="inspectArmy">-</strong></div>
+    <div class="stat"><span>防御</span><strong id="inspectFort">-</strong></div>
+    <div class="stat"><span>地形</span><strong id="inspectTerrain">-</strong></div>
+  </div></div>
+</section>
+
+<section class="panel">
+  <h2>战报</h2>
+  <div id="log" class="log"></div>
+  <div class="toolbar">
+    <button id="saveBtn" class="quiet">保存战局</button>
+    <button id="loadBtn" class="quiet">读取战局</button>
+    <button id="newBtn" class="danger wide">新开一局</button>
+  </div>
+</section>
+
+</aside></main>
+<script>
+'use strict';
+/* ================= 基本参数 ================= */
+const W=1104,H=660,CELL=12,COLS=Math.ceil(W/CELL),ROWS=Math.ceil(H/CELL);
+const LIMIT=150, PHASE2=75;                     // 2 分 30 秒速决战；01:15 起可以反攻
+const LASTSTAND=150;                            // 南京沦陷后，残部抵抗的最长时限（被全歼则立即结束）
+const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d');
+const stageEl=document.querySelector('.stage');
+let viewScale=1;                                 // 逻辑坐标 → CSS 像素 的比例
+const TUNE={
+  redSendBase:1.15, redSendWave:0.50,
+  redPower:1.6,
+  bluePower:1.35, blueCounterPower:3.2,
+  fortBlock:0.62,
+  hillBlock:0.45,
+  holdBonus:0.42,
+  attackCap:16, counterCap:26, enemyCapBase:22, enemyCapWave:8,
+  waveStep:[60,110],
+  collapseRatio:0.30,
+  redFlow:{min:24,keep:16,rate:0.26},
+  blueFlow:{min:40,keep:26,rate:0.14}
+};
+
+/* ================= 地理：南京 ================= */
+function ell(cx,cy,rx,ry,n,rot){const p=[];for(let i=0;i<n;i++){const a=(rot||0)+i/n*Math.PI*2;p.push([cx+Math.cos(a)*rx,cy+Math.sin(a)*ry])}return p}
+const riverLine=[[-24,308],[140,278],[280,248],[420,214],[540,186],[640,158],[740,124],[860,88],[980,58],[1128,34]];
+const RIVER_HW=32;
+const riverPoly=[...riverLine.map(p=>[p[0],p[1]-RIVER_HW]),...riverLine.slice().reverse().map(p=>[p[0],p[1]+RIVER_HW])];
+const northLand=[[-24,-40],[1128,-40],...riverLine.slice().reverse().map(p=>[p[0],p[1]-RIVER_HW])];
+const southLand=[...riverLine.map(p=>[p[0],p[1]+RIVER_HW]),[1128,H+40],[-24,H+40]];
+const jiangxin=[[138,268],[186,258],[246,264],[250,282],[196,292],[144,284]];
+const bagua=[[758,102],[820,88],[888,100],[882,120],[806,126],[752,120]];
+const lake=[[508,262],[556,256],[596,266],[588,296],[550,308],[516,298],[502,278]];
+const wall=[[330,300],[368,272],[404,258],[450,250],[500,248],[548,248],[578,262],[612,282],[638,306],[646,330],[630,352],[608,372],[580,392],[540,410],[497,422],[462,424],[428,418],[398,404],[370,384],[344,352],[330,326]];
+const gates=[
+  {n:'挹江门',x:352,y:286},{n:'神策门',x:432,y:250},{n:'太平门',x:566,y:253},{n:'中山门',x:640,y:304},
+  {n:'光华门',x:612,y:364},{n:'通济门',x:566,y:396},{n:'中华门',x:464,y:424},{n:'水西门',x:400,y:404},{n:'汉中门',x:334,y:330}
+];
+const corePoly=[[444,322],[500,322],[504,364],[446,366]];
+const hills=[{n:'紫金山',p:ell(768,268,105,76,18)},{n:'雨花台',p:ell(470,486,62,30,14)},{n:'清凉山',p:ell(368,352,24,15,10)},{n:'老山',p:ell(300,96,92,42,16)}];
+const staging=[{n:'浦口',x:400,y:140,rx:70,ry:40},{n:'紫金山·汤山',x:900,y:300,rx:70,ry:60},{n:'雨花台·安德门',x:470,y:556,rx:66,ry:46}];
+const crossings=[[[120,242],[120,322]],[[400,174],[400,258]],[[700,98],[700,184]]];
+const CITY_CX=472,CITY_CY=344;
+
+/* ================= 几何工具 ================= */
+function pointInPoly(x,y,poly){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside}return inside}
+function pointSegDist(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1;if(dx===0&&dy===0)return Math.hypot(px-x1,py-y1);const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/(dx*dx+dy*dy)));return Math.hypot(px-(x1+t*dx),py-(y1+t*dy))}
+function distToPolyline(x,y,pts,closed){let best=1e9;for(let i=0;i<pts.length-1;i++)best=Math.min(best,pointSegDist(x,y,pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]));if(closed)best=Math.min(best,pointSegDist(x,y,pts[pts.length-1][0],pts[pts.length-1][1],pts[0][0],pts[0][1]));return best}
+function onCrossing(x,y){return crossings.some(c=>pointSegDist(x,y,c[0][0],c[0][1],c[1][0],c[1][1])<9)}
+function onLand(x,y){
+  if(pointInPoly(x,y,jiangxin)||pointInPoly(x,y,bagua))return true;
+  if(onCrossing(x,y))return true;
+  if(pointInPoly(x,y,riverPoly))return false;
+  return pointInPoly(x,y,northLand)||pointInPoly(x,y,southLand);
+}
+function rand(x,y){const n=Math.sin(x*12.9898+y*78.233)*43758.5453;return n-Math.floor(n)}
+
+/* ================= 世界 ================= */
+const cells=[],byIndex=new Array(COLS*ROWS).fill(null);
+const lists={city:[],wall:[],core:[],stage:[[],[],[]],red0:[]};
+const game={mode:'hold',commit:55,paused:false,speed:1,time:0,clock:LIMIT,limit:LIMIT,aiTimer:.2,over:false,win:null,
+  commands:[],selected:null,drag:null,counterOrders:0,phase:1,redShockUntil:0,result:'',nextWave:45,waveNo:1,red0Army:0,flowTimer:0,
+  fallen:false,lastStand:LASTSTAND,lastStandStart:0,pending:null};
+
+function makeCell(x,y){
+  const cx=x*CELL+CELL/2,cy=y*CELL+CELL/2;
+  if(!onLand(cx,cy))return null;
+  if(pointInPoly(cx,cy,lake))return null;
+  const r=rand(x,y),r2=rand(y*3+1,x*7+2);
+  const inCity=pointInPoly(cx,cy,wall);
+  const isWall=distToPolyline(cx,cy,wall,true)<7;
+  const gate=gates.find(g=>Math.hypot(g.x-cx,g.y-cy)<13);
+  const core=pointInPoly(cx,cy,corePoly);
+  const hill=hills.find(h=>pointInPoly(cx,cy,h.p))||null;
+  let stage=-1;staging.forEach((s,i)=>{if(((cx-s.x)/s.rx)**2+((cy-s.y)/s.ry)**2<1)stage=i});
+  const bridge=onCrossing(cx,cy);
+  let owner='neutral',army=3+r*5,fort=0,growth=.05;
+  if(core){owner='blue';army=32;fort=3.2;growth=.22}
+  else if(gate&&isWall){owner='blue';army=20;fort=1.2;growth=.14}
+  else if(isWall){owner='blue';army=23;fort=3.2;growth=.12}
+  else if(inCity){owner='blue';army=14+r*12;fort=1.4;growth=.30}
+  else if(bridge){owner='neutral';army=6;fort=0;growth=.04}
+  else if(stage>=0){owner='red';army=26+r2*18;fort=(hill?1.6:0);growth=.34}
+  return {x,y,cx,cy,owner,army,fort,growth,shade:Math.floor(r*8),inCity,isWall,core,hill,stage,bridge,
+    gateName:gate?gate.n:null,defendUntil:0,neighbors:[]};
+}
+function buildWorld(){
+  const dirs=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    const c=makeCell(x,y);byIndex[y*COLS+x]=c;
+    if(c){cells.push(c);if(c.core)lists.core.push(c);if(c.isWall)lists.wall.push(c);if(c.inCity)lists.city.push(c);if(c.stage>=0)lists.stage[c.stage].push(c)}
+  }
+  cells.forEach(c=>{dirs.forEach(([dx,dy])=>{const nx=c.x+dx,ny=c.y+dy;if(nx>=0&&ny>=0&&nx<COLS&&ny<ROWS){const n=byIndex[ny*COLS+nx];if(n)c.neighbors.push(n)}})});
+  lists.red0=cells.filter(c=>c.owner==='red');
+  game.red0Army=lists.red0.reduce((s,c)=>s+c.army,0);
+}
+function countOwner(o,list){let n=0;for(const c of list||cells)if(c.owner===o)n++;return n}
+function armyOwner(o){let n=0;for(const c of cells)if(c.owner===o)n+=c.army;return n}
+function frac(o,list){return list.length?countOwner(o,list)/list.length:0}
+
+/* ================= 画布自适应 ================= */
+function fitCanvas(){
+  const cssW=Math.max(200,Math.floor(stageEl.clientWidth||W));
+  const cssH=cssW*H/W;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.style.width=cssW+'px';
+  canvas.style.height=cssH+'px';
+  const bw=Math.max(1,Math.round(cssW*dpr)),bh=Math.max(1,Math.round(cssH*dpr));
+  if(canvas.width!==bw||canvas.height!==bh){canvas.width=bw;canvas.height=bh}
+  viewScale=cssW/W;
+  draw();
+}
+
+/* ================= 界面工具 ================= */
+function clockText(sec){const s=Math.max(0,Math.ceil(sec===undefined?game.clock:sec));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function elapsedText(){const s=Math.floor(game.time);return '+'+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function writeLog(text){const log=document.getElementById('log');const d=document.createElement('div');d.textContent='['+elapsedText()+'] '+text;log.insertBefore(d,log.firstChild);while(log.childElementCount>80)log.lastElementChild.remove()}
+function showToast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>el.classList.remove('show'),1700)}
+
+/* ================= 战斗 ================= */
+function capture(target,attacker,send,quiet){
+  const old=target.owner;target.owner=attacker;
+  target.army=Math.max(1.5,send*0.9);
+  target.fort=Math.max(0,target.fort-1.4);
+  target.defendUntil=game.time+1.0;
+  if(!quiet&&old!=='neutral'&&old!==attacker&&!(game.fallen&&!target.core&&!target.gateName&&!target.isWall)){
+    const who=attacker==='blue'?'国军':'共军';
+    const what=target.core?'总统府核心区':target.gateName?target.gateName:target.isWall?'城墙段':(target.inCity?'城内街区':'外围');
+    writeLog(who+'夺取了'+what+(attacker==='red'?'！':'。'));
+  }
+  return old;
+}
+function fightCell(source,target,attacker,send,power){
+  if(send<=0||source.army<=1||!target||target.owner===attacker)return false;
+  const block=target.fort*TUNE.fortBlock+(target.hill?TUNE.hillBlock:0)+(target.defendUntil>game.time?TUNE.holdBonus:0);
+  const raw=send*power;
+  const damage=Math.max(raw*0.15,raw-block);
+  source.army-=send*(game.fallen?0.35:0.72);
+  target.army-=damage;
+  if(target.army<=0){capture(target,attacker,send);return true}
+  return false;
+}
+function targetFor(cell,dir,attacker){let best=null,score=-Infinity;for(const n of cell.neighbors){if(n.owner===attacker)continue;const vx=n.cx-cell.cx,vy=n.cy-cell.cy,align=vx*dir[0]+vy*dir[1];if(align>score){score=align;best=n}}return score>0?best:null}
+function commandDir(cmd){const dx=cmd.x2-cmd.x1,dy=cmd.y2-cmd.y1,l=Math.hypot(dx,dy)||1;return[dx/l,dy/l]}
+function commandCells(cmd,owner){
+  const dir=commandDir(cmd),out=[];
+  for(const c of cells){
+    if(c.owner!==owner)continue;
+    if(pointSegDist(c.cx,c.cy,cmd.x1,cmd.y1,cmd.x2,cmd.y2)>84)continue;
+    const along=(c.cx-cmd.x1)*dir[0]+(c.cy-cmd.y1)*dir[1];
+    if(along<-40)continue;
+    const t=(cmd.mode==='advance'||cmd.mode==='counter')?targetFor(c,dir,owner):null;
+    if((cmd.mode==='advance'||cmd.mode==='counter')&&!t)continue;
+    out.push({c,t,score:along-pointSegDist(c.cx,c.cy,cmd.x1,cmd.y1,cmd.x2,cmd.y2)});
+  }
+  return out.sort((a,b)=>b.score-a.score);
+}
+function applyCommand(cmd,dt){
+  if(cmd.mode==='hold'){
+    let n=0;for(const {c} of commandCells(cmd,'blue')){if(n++>=24)break;c.fort=Math.min(5.5,c.fort+0.13*dt);c.army=Math.min(70,c.army+0.55*dt);c.defendUntil=game.time+1.2}
+  }else if(cmd.mode==='reinforce'){
+    let n=0;for(const {c} of commandCells(cmd,'blue')){if(n++>=26)break;c.army=Math.min(70,c.army+(0.95+cmd.commit/100*0.55)*dt);c.fort=Math.min(5.5,c.fort+0.012*dt)}
+  }else{
+    const counter=cmd.mode==='counter', cap=counter?TUNE.counterCap:TUNE.attackCap;
+    const need=counter?1.0:1.2, power=counter?TUNE.blueCounterPower:TUNE.bluePower;
+    let n=0;
+    for(const {c,t} of commandCells(cmd,'blue')){
+      if(n>=cap)break;
+      if(!t||c.army<need+0.4)continue;
+      const send=counter?Math.min(c.army-need,(0.85+cmd.commit/100*1.5)*dt):Math.min(c.army-need,(0.34+cmd.commit/100*1.15)*dt);
+      fightCell(c,t,'blue',send,power);n++;
+    }
+  }
+}
+function applyEnemy(dt){
+  game.aiTimer-=dt;if(game.aiTimer>0)return;game.aiTimer=.28;
+  const wave=game.time<TUNE.waveStep[0]?1:game.time<TUNE.waveStep[1]?2:3;
+  const shock=game.redShockUntil>game.time?0.5:1;
+  const cap=(TUNE.enemyCapBase+wave*TUNE.enemyCapWave)+(game.fallen?45:0);
+  const list=[];
+  for(const c of cells){
+    if(c.owner!=='red'||c.army<2.6)continue;
+    let bn=null,bs=1e9;
+    for(const n of c.neighbors){if(n.owner==='red')continue;const s=prio(n);if(s<bs){bs=s;bn=n}}
+    if(bn)list.push({c,n:bn,s:bs});
+  }
+  list.sort((a,b)=>a.s-b.s);
+  const send0=Math.min(TUNE.redSendBase+wave*TUNE.redSendWave,9)*shock*(game.fallen?1.7:1);
+  for(let i=0;i<list.length&&i<cap;i++){
+    const {c,n}=list[i];
+    if(c.army<2.6)continue;
+    fightCell(c,n,'red',Math.min(c.army-1,send0),TUNE.redPower);
+  }
+  function prio(a){
+    let s=a.army+a.fort*2.2+(a.hill?1.8:0)+Math.hypot(a.cx-CITY_CX,a.cy-CITY_CY)*0.55;
+    if(a.gateName)s-=18;if(a.core)s-=14;if(a.inCity)s-=8;
+    if((a.owner==='blue')&&a.army<8)s-=6;
+    if(game.fallen)s+=(a.owner==='neutral'?300:-120);
+    return s;
+  }
+}
+function step(dt){
+  game.time+=dt;
+  if(game.time>=game.nextWave){
+    game.nextWave+=45;game.waveNo++;
+    let n=0;for(const c of lists.red0){if(c.owner==='red'&&c.army<70){c.army=Math.min(70,c.army+11);n++}}
+    if(n)writeLog('共军第 '+game.waveNo+' 波渡江部队上岸，各集结地补充兵力。');
+  }
+  for(const cmd of game.commands)if(cmd.mode==='counter'&&cmd.until&&game.time>cmd.until)cmd.expired=true;
+  game.commands=game.commands.filter(c=>!c.expired);
+  for(const c of cells){
+    if(c.owner==='neutral')continue;
+    const quickest=c.owner==='blue'&&game.commands.some(cmd=>cmd.mode==='reinforce'&&pointSegDist(c.cx,c.cy,cmd.x1,cmd.y1,cmd.x2,cmd.y2)<84);
+    const fallenPenalty=(c.owner==='blue'&&game.fallen)?0.3:1;
+    c.army=Math.min(70,c.army+c.growth*dt*(quickest?1.7:1)*(c.owner==='red'?0.85:1)*fallenPenalty);
+    if(c.owner==='blue'&&game.fallen){
+      const el=LASTSTAND-game.lastStand;
+      c.army-=(0.6+el*0.012)*dt;
+      if(c.army<=0.8)capture(c,'red',1.2,true);
+    }
+  }
+  for(const cmd of game.commands)applyCommand(cmd,dt);
+  applyFlow(dt);
+  applyEnemy(dt);
+  checkEnd();
+}
+function applyFlow(dt){
+  game.flowTimer-=dt;if(game.flowTimer>0)return;game.flowTimer=.5;
+  let fx=0,fy=0,fn=0;
+  for(const c of cells)if(c.owner==='red'&&c.neighbors.some(n=>n.owner!=='red')){fx+=c.cx;fy+=c.cy;fn++}
+  if(fn){fx/=fn;fy/=fn}
+  const RF=game.fallen?{min:14,keep:6,rate:0.50}:TUNE.redFlow;
+  const BF=game.fallen?{min:60,keep:44,rate:0.05}:TUNE.blueFlow;
+  for(const c of cells){
+    if(c.owner==='red'){
+      if(c.army<RF.min)continue;
+      let best=null,bd=Math.hypot(c.cx-CITY_CX,c.cy-CITY_CY);
+      for(const n of c.neighbors){if(n.owner!=='red')continue;const d=Math.hypot(n.cx-CITY_CX,n.cy-CITY_CY);if(d<bd-1){bd=d;best=n}}
+      if(best){const mv=(c.army-RF.keep)*RF.rate;c.army-=mv;best.army=Math.min(70,best.army+mv)}
+    }else if(c.owner==='blue'&&fn){
+      if(c.army<BF.min)continue;
+      let best=null,bd=Math.hypot(c.cx-fx,c.cy-fy);
+      for(const n of c.neighbors){if(n.owner!=='blue')continue;const d=Math.hypot(n.cx-fx,n.cy-fy);if(d<bd-1){bd=d;best=n}}
+      if(best){const mv=(c.army-BF.keep)*BF.rate;c.army-=mv;best.army=Math.min(70,best.army+mv)}
+    }
+  }
+}
+function checkEnd(){
+  if(game.over)return;
+  const cityRed=frac('red',lists.city);
+  const cityBlue=frac('blue',lists.city);
+  if(game.fallen){
+    if(countOwner('blue')===0)return finish(false,'国军守军被全歼，战役彻底结束');
+    return;
+  }
+  const coreRed=countOwner('red',lists.core)===lists.core.length&&lists.core.length>0;
+  if(coreRed)return declareFall('共军占领总统府核心区');
+  if(cityRed>=0.35)return declareFall('共军突入城内三分之一（'+Math.round(cityRed*100)+'%）');
+  const taken=[0,1,2].filter(i=>frac('blue',lists.stage[i])>=0.75);
+  if(taken.length===3)return finish(true,'反攻得手，三处渡口集结地全部收复');
+  if(countOwner('red')<=lists.red0.length*0.06)return finish(true,'共军攻势瓦解，被迫全线后撤');
+  if(armyOwner('red')<=game.red0Army*TUNE.collapseRatio)return finish(true,'共军渡江部队损耗殆尽，攻势崩溃');
+  if(cityBlue>=0.98&&countOwner('red')<lists.red0.length*0.5)return finish(true,'南京城防稳固，共军无力再攻');
+  if(game.time>75&&countOwner('red',lists.wall)===0&&cityBlue>=0.95){
+    let near=0;for(const c of cells)if(c.owner==='red'&&distToPolyline(c.cx,c.cy,wall,true)<22)near++;
+    if(near<=5)return finish(true,'共军被压在城外，城墙无缺口，守城成功');
+  }
+}
+function declareFall(reason){
+  if(game.fallen||game.over)return;
+  game.fallen=true;game.lastStand=LASTSTAND;
+  game.counterOrders=Math.max(game.counterOrders,1);
+  document.getElementById('clockLabel').textContent='最后抵抗';
+  let n=0;
+  for(const c of cells)if(c.owner==='blue'){c.army=Math.min(70,c.army+2);n++}
+  writeLog('南京沦陷：'+reason+'。国军残部 '+n+' 处据点退入街巷，誓死不降——战斗继续，直到被全歼。');
+  showToast('南京沦陷！残部转入最后抵抗');
+}
+function assess(){
+  if(game.fallen)return;
+  const coreBlue=countOwner('blue',lists.core)>0;
+  const cityBlue=frac('blue',lists.city);
+  const taken=[0,1,2].filter(i=>frac('blue',lists.stage[i])>=0.5);
+  const ok=coreBlue&&cityBlue>=0.70;
+  let extra=taken.length?'反攻已收复 '+taken.map(i=>staging[i].n).join('、')+'。':'三处集结地仍在共军手中。';
+  finish(ok,'两分半到期：核心区'+(coreBlue?'仍在国军手中':'已失守')+'，城内国军控制 '+Math.round(cityBlue*100)+'%（守住需 ≥70%）。'+extra);
+}
+function finishByIdle(){ if(!game.fallen||game.over)return; finish(false,'最后抵抗时限耗尽，残部被压缩至最后据点，南京战役结束'); }
+function finish(win,reason){
+  if(game.over)return;
+  game.over=true;game.paused=true;game.win=win;
+  document.getElementById('endTitle').textContent=win?'南京守住了':(game.fallen?'南京沦陷':'南京失守');
+  document.getElementById('endText').textContent=reason+(game.fallen?'（国军残部 '+countOwner('blue')+' 处据点）':'');
+  document.getElementById('gameOver').classList.add('show');
+  document.getElementById('pauseBtn').textContent='继续';
+  writeLog((win?'战役结果：守住南京':(game.fallen?'战役结果：南京沦陷':'战役结果：南京失守'))+'——'+reason);
+}
+
+/* ================= 绘制 ================= */
+function colorFor(c){
+  const a=c.army;
+  if(c.owner==='neutral')return 'hsl(45,'+(16+c.shade)+'%,'+(50+c.shade)+'%)';
+  if(c.owner==='blue')return 'hsl(206,'+(34+c.shade)+'%,'+(38+Math.min(18,a/4))+'%)';
+  return 'hsl(6,'+(40+c.shade)+'%,'+(40+Math.min(18,a/4))+'%)';
+}
+function poly(pts){ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath()}
+function drawTerrain(){
+  ctx.fillStyle='#cfd8dc';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#7f9db0';
+  poly(riverPoly);ctx.fill();poly(lake);ctx.fill();
+  ctx.fillStyle='#a8a06a';
+  for(const h of hills){poly(h.p);ctx.fill()}
+  ctx.fillStyle='#b9a179';
+  for(const c of crossings){ctx.save();ctx.lineWidth=17;ctx.strokeStyle='#c2ab7d';ctx.beginPath();ctx.moveTo(c[0][0],c[0][1]);ctx.lineTo(c[1][0],c[1][1]);ctx.stroke();ctx.restore()}
+  ctx.strokeStyle='#5d7b8c';ctx.lineWidth=1.5;
+  poly(riverPoly);ctx.stroke();poly(lake);ctx.stroke();
+}
+function drawCells(){for(const c of cells){ctx.fillStyle=colorFor(c);ctx.fillRect(c.x*CELL,c.y*CELL,CELL+.7,CELL+.7)}}
+function drawWall(){
+  ctx.save();
+  ctx.strokeStyle='#6b5a3a';ctx.lineWidth=3.4;poly(wall);ctx.stroke();
+  ctx.strokeStyle='#3c3222';ctx.lineWidth=1.2;poly(wall);ctx.stroke();
+  ctx.fillStyle='#5d4a2c';
+  for(const g of gates){ctx.fillRect(g.x-7,g.y-7,14,14);ctx.strokeStyle='#3c3222';ctx.strokeRect(g.x-7,g.y-7,14,14)}
+  ctx.restore();
+}
+function drawLabels(){
+  ctx.save();ctx.textAlign='center';
+  ctx.fillStyle='#2d4a5e';ctx.font='bold 20px Georgia,serif';ctx.fillText('长　江',150,262);
+  ctx.font='14px Georgia,serif';ctx.fillStyle='#31556b';ctx.fillText('玄武湖',552,286);
+  ctx.fillStyle='#5b5330';ctx.font='15px Georgia,serif';
+  ctx.fillText('紫金山',768,272);ctx.fillText('雨花台',470,492);ctx.fillText('清凉山',368,356);ctx.fillText('老山',300,100);
+  ctx.fillStyle='#7a5a2f';ctx.font='14px Georgia,serif';ctx.fillText('浦口',400,152);ctx.fillText('燕子矶',700,112);ctx.fillText('江心洲',196,278);ctx.fillText('八卦洲',820,110);ctx.fillText('汤山',940,268);ctx.fillText('安德门',470,566);
+  ctx.fillStyle='#4b3a26';ctx.font='13px Georgia,serif';
+  ctx.fillText('下关',420,232);ctx.fillText('总统府',472,314);ctx.fillText('新街口',414,376);ctx.fillText('夫子庙',524,404);ctx.fillText('明故宫',576,318);ctx.fillText('中华门外',470,452);
+  ctx.font='11px system-ui,sans-serif';ctx.fillStyle='#3f3222';
+  for(const g of gates)ctx.fillText(g.n,g.x,g.y-11);
+  ctx.restore();
+}
+function drawCommand(cmd,color,alpha){
+  const dir=commandDir(cmd);ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;
+  ctx.setLineDash([9,6]);ctx.beginPath();ctx.moveTo(cmd.x1,cmd.y1);ctx.lineTo(cmd.x2,cmd.y2);ctx.stroke();ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(cmd.x1,cmd.y1,5,0,Math.PI*2);ctx.fill();
+  const bx=cmd.x2-dir[0]*14,by=cmd.y2-dir[1]*14;
+  ctx.beginPath();ctx.moveTo(cmd.x2,cmd.y2);ctx.lineTo(bx-dir[1]*7,by+dir[0]*7);ctx.lineTo(bx+dir[1]*7,by-dir[0]*7);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+function draw(){
+  ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);
+  drawTerrain();drawCells();drawWall();drawLabels();
+  for(const cmd of game.commands)drawCommand(cmd,cmd.mode==='hold'?'#63b8a6':cmd.mode==='reinforce'?'#d0a2e0':cmd.mode==='counter'?'#ff9d3c':'#f3d594',.85);
+  if(game.drag)drawCommand({x1:game.drag.x1,y1:game.drag.y1,x2:game.drag.x2,y2:game.drag.y2,mode:game.mode},'#fff0b5',.95);
+  if(game.pending){
+    if(pointer.mode==='aim'&&pointer.x2!==undefined)
+      drawCommand({x1:game.pending.x,y1:game.pending.y,x2:pointer.x2,y2:pointer.y2,mode:game.mode},'#ffe9a8',.9);
+    const t=performance.now()/420,rr=8+Math.sin(t)*2.5;
+    ctx.save();
+    ctx.strokeStyle='#ffe9a8';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(game.pending.x,game.pending.y,rr,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#ffe9a8';ctx.beginPath();ctx.arc(game.pending.x,game.pending.y,3.5,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+  if(game.selected){ctx.save();ctx.strokeStyle='#fff2b2';ctx.lineWidth=2;ctx.strokeRect(game.selected.x*CELL-2,game.selected.y*CELL-2,CELL+5,CELL+5);ctx.restore()}
+}
+function modeName(m){return m==='hold'?'固守':m==='reinforce'?'增援':m==='counter'?'反攻':'推进'}
+
+/* ================= 数据面板 ================= */
+function updateStats(){
+  const cityBlue=frac('blue',lists.city),cityRed=frac('red',lists.city);
+  const breach=lists.wall.filter(c=>c.owner==='red').length;
+  const g=id=>document.getElementById(id);
+  g('clock').textContent=game.fallen?clockText(game.lastStand):clockText(game.clock);
+  g('cityPct').textContent=Math.round(cityBlue*100)+'%';
+  g('wallPct').textContent=Math.round(countOwner('blue',lists.wall)/lists.wall.length*100)+'%';
+  g('breaches').textContent=breach;
+  g('redArmy').textContent=Math.round(armyOwner('red')).toLocaleString();
+  g('redArmyPanel').textContent=Math.round(armyOwner('red')).toLocaleString();
+  g('blueCellsLeft').textContent=countOwner('blue')+' 处';
+  g('counterOrders').textContent=game.counterOrders;
+  g('commandCount').textContent=game.commands.length;
+  g('blueCityPct').textContent=Math.round(cityBlue*100)+'%';
+  g('redCityPct').textContent=Math.round(cityRed*100)+'%';
+  g('wallOk').textContent=Math.round(countOwner('blue',lists.wall)/lists.wall.length*100)+'%';
+  g('breachCount').textContent=breach;
+  [0,1,2].forEach(i=>{
+    const f=frac('blue',lists.stage[i]);const el=g('z'+i);
+    el.textContent=f>=0.75?'已收复':f>=0.5?'争夺中 '+Math.round(f*100)+'%':f>=0.25?'共军松动 '+Math.round(f*100)+'%':'在敌手';
+    el.style.color=f>=0.75?'#2c6b4f':f>=0.5?'#8a6a1f':'#8f4038';
+  });
+  const cb=document.querySelector('.mode[data-mode="counter"]');
+  if(cb)cb.classList.toggle('locked',game.counterOrders<=0);
+  g('statusText').textContent=game.over?'战役已经结束。点击新开一局重新开始。':game.paused?'已暂停（倒计时同步暂停）。':
+    game.fallen?'南京已沦陷：残部仅存 '+countOwner('blue')+' 处据点，被全歼即告结束（最后抵抗 '+clockText(game.lastStand)+'）。':
+    game.phase===1?'阶段一 02:30–01:15：共军三路渡江强攻。先固守城门与渡口，01:15 后可得反攻令。':
+    '阶段二：反攻令已下达，'+(game.counterOrders>0?'当前有 '+game.counterOrders+' 道反攻令可用。':'反攻令已用尽。');
+}
+function inspect(cell){
+  game.selected=cell;const box=document.getElementById('inspectBox');
+  if(!cell){box.classList.remove('show');return}
+  box.classList.add('show');
+  const g=id=>document.getElementById(id);
+  g('inspectTitle').textContent=cell.owner==='blue'?'国军据守地块':cell.owner==='red'?'共军占领地块':'中立地块';
+  const t=[];
+  if(cell.core)t.push('核心区');if(cell.gateName)t.push('城门·'+cell.gateName);else if(cell.isWall)t.push('城墙');
+  else if(cell.inCity)t.push('城内街区');else t.push('城外');
+  if(cell.hill)t.push(cell.hill.n);if(cell.bridge)t.push('渡口浮桥');if(cell.stage>=0)t.push(staging[cell.stage].n+'集结地');
+  g('inspectInfo').textContent='连续战场中的一个小地块（12×12 像素）。点击只查看，不会下令。';
+  g('inspectOwner').textContent=cell.owner==='blue'?'国军':cell.owner==='red'?'共军':'中立';
+  g('inspectArmy').textContent=Math.round(cell.army)+' 千';
+  g('inspectFort').textContent=cell.fort.toFixed(1);
+  g('inspectTerrain').textContent=t.join('·');
+}
+
+/* ================= 输入（触屏 + 鼠标） ================= */
+const pointer={mode:null,sx:0,sy:0,cell:null,x2:undefined,y2:undefined};
+function canvasScale(){const r=canvas.getBoundingClientRect();return r.width?W/r.width:1}
+function pointFromEvent(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function snapRadius(){return Math.min(52,Math.max(16,18*canvasScale()))}
+function nearestBlue(p,radius){
+  let best=null,bd=radius*radius;
+  for(const c of cells){
+    if(c.owner!=='blue')continue;
+    const dx=c.cx-p.x,dy=c.cy-p.y,d=dx*dx+dy*dy;
+    if(d<bd){bd=d;best=c}
+  }
+  return best;
+}
+function getCell(p){const x=Math.floor(p.x/CELL),y=Math.floor(p.y/CELL);if(x<0||y<0||x>=COLS||y>=ROWS)return null;return byIndex[y*COLS+x]}
+function updateAimUI(){
+  const b=document.getElementById('cancelAim');
+  if(b)b.hidden=!game.pending;
+}
+function commitCommand(d){
+  if(game.over)return false;
+  if(Math.hypot(d.x2-d.x1,d.y2-d.y1)*viewScale<10){showToast('拖动距离太短，请拉长一点');return false}
+  if(game.mode==='counter'&&game.counterOrders<=0){
+    showToast(game.phase===1?'反攻令要到 01:15 之后才有。':'反攻令已经用完了。');return false;
+  }
+  if(game.commands.length>=6){showToast('指令已达 6 条上限，请先清除旧指令。');return false}
+  const cmd={x1:d.x1,y1:d.y1,x2:d.x2,y2:d.y2,mode:game.mode,commit:game.commit};
+  if(game.mode==='counter'){
+    game.counterOrders--;cmd.until=game.time+60;game.redShockUntil=game.time+20;
+    for(const c of cells){
+      if(c.owner==='red'&&pointSegDist(c.cx,c.cy,cmd.x1,cmd.y1,cmd.x2,cmd.y2)<86)c.army*=0.88;
+      else if(c.owner==='blue'&&pointSegDist(c.cx,c.cy,cmd.x1,cmd.y1,cmd.x2,cmd.y2)<86)c.army=Math.min(70,c.army+6);
+    }
+    writeLog('反攻令下达：全线突击 60 秒，预备队上城，共军攻势受挫。');
+  }else writeLog(modeName(game.mode)+'指令建立。');
+  game.commands.push(cmd);
+  showToast('已建立'+modeName(game.mode)+'指令');
+  draw();updateStats();
+  return true;
+}
+
+canvas.addEventListener('pointerdown',e=>{
+  if(game.over)return;
+  e.preventDefault();
+  try{canvas.setPointerCapture(e.pointerId)}catch(err){}
+  pointer.sx=e.clientX;pointer.sy=e.clientY;
+  const p=pointFromEvent(e);
+
+  if(game.pending){                 // 已有起点：这一次点击用来定方向
+    pointer.mode='aim';pointer.x2=p.x;pointer.y2=p.y;
+    draw();return;
+  }
+  const bc=nearestBlue(p,snapRadius());
+  if(bc){
+    pointer.mode='drag';
+    game.drag={x1:bc.cx,y1:bc.cy,x2:p.x,y2:p.y};
+    draw();
+  }else{
+    pointer.mode='inspect';
+    pointer.cell=getCell(p);
+  }
+},{passive:false});
+
+canvas.addEventListener('pointermove',e=>{
+  if(pointer.mode!=='drag'&&pointer.mode!=='aim')return;
+  e.preventDefault();
+  const p=pointFromEvent(e);
+  if(pointer.mode==='drag'){game.drag.x2=p.x;game.drag.y2=p.y}
+  else{pointer.x2=p.x;pointer.y2=p.y}
+  draw();
+},{passive:false});
+
+canvas.addEventListener('pointerup',e=>{
+  if(!pointer.mode)return;
+  e.preventDefault();
+  const mode=pointer.mode;pointer.mode=null;
+  const moved=Math.hypot(e.clientX-pointer.sx,e.clientY-pointer.sy);
+
+  if(mode==='aim'){
+    const p=pointFromEvent(e);
+    const dist=Math.hypot(p.x-game.pending.x,p.y-game.pending.y);
+    if(dist*viewScale>10){
+      const from=game.pending;game.pending=null;updateAimUI();
+      commitCommand({x1:from.x,y1:from.y,x2:p.x,y2:p.y});
+    }else{
+      showToast('方向点太近了，请点远一些');
+    }
+    pointer.x2=undefined;pointer.y2=undefined;
+    draw();return;
+  }
+  if(mode==='drag'){
+    const d=game.drag;game.drag=null;
+    const lenScreen=Math.hypot(d.x2-d.x1,d.y2-d.y1)*viewScale;
+    if(moved>12&&lenScreen>10){
+      commitCommand(d);
+    }else{
+      game.pending={x:d.x1,y:d.y1};
+      updateAimUI();
+      showToast('已选定起点 · 再点地图任意处确定方向');
+    }
+    draw();return;
+  }
+  if(mode==='inspect'){
+    if(moved<12)inspect(pointer.cell);
+    draw();return;
+  }
+},{passive:false});
+
+canvas.addEventListener('pointercancel',()=>{pointer.mode=null;game.drag=null;pointer.x2=undefined;pointer.y2=undefined;draw()});
+
+document.getElementById('cancelAim').addEventListener('click',()=>{
+  game.pending=null;pointer.x2=undefined;pointer.y2=undefined;updateAimUI();draw();
+  showToast('已取消选点');
+});
+
+document.querySelectorAll('.mode').forEach(btn=>btn.addEventListener('click',()=>{
+  game.mode=btn.dataset.mode;
+  document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b===btn));
+  showToast('已切换为'+modeName(game.mode)+(game.mode==='counter'&&game.counterOrders<=0?'（暂无反攻令）':''));
+}));
+document.getElementById('commit').addEventListener('input',e=>{game.commit=Number(e.target.value);document.getElementById('commitValue').textContent=game.commit+'%'});
+document.getElementById('pauseBtn').addEventListener('click',()=>{if(game.over)return;game.paused=!game.paused;document.getElementById('pauseBtn').textContent=game.paused?'继续':'暂停';updateStats()});
+document.getElementById('speedBtn').addEventListener('click',()=>{game.speed=game.speed===1?2:game.speed===2?4:1;document.getElementById('speedBtn').textContent='速度 '+game.speed+'x'});
+document.getElementById('clearBtn').addEventListener('click',()=>{game.commands=[];game.pending=null;updateAimUI();showToast('已清除全部指令');writeLog('全部指令已取消。');updateStats()});
+function resetGame(){location.reload()}
+document.getElementById('newBtn').addEventListener('click',resetGame);
+document.getElementById('restartOverlay').addEventListener('click',resetGame);
+
+/* ================= 存读档 ================= */
+const SAVE_KEY='nanjing1949-defense-save';
+function saveGame(){
+  if(game.over){writeLog('战役已结束，无需保存。');showToast('战役已结束，不能再保存');return}
+  const snap={v:3,clock:game.clock,time:game.time,phase:game.phase,counterOrders:game.counterOrders,mode:game.mode,commit:game.commit,
+    fallen:game.fallen,lastStand:game.lastStand,
+    commands:game.commands,cells:cells.map(c=>({owner:c.owner,army:c.army,fort:c.fort,growth:c.growth,defendUntil:c.defendUntil}))};
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(snap));writeLog('战局已保存（'+(game.fallen?'最后抵抗 ':'倒计时 ')+clockText(game.fallen?game.lastStand:game.clock)+'）。');showToast('已保存')}
+  catch(err){writeLog('保存失败：'+err.message)}
+}
+function loadGame(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw){writeLog('没有找到保存的战局。');showToast('没有存档');return}
+  let s;try{s=JSON.parse(raw)}catch(err){writeLog('保存数据损坏，无法读取。');return}
+  if(!s||!s.cells||s.cells.length!==cells.length){writeLog('存档与当前地图不匹配，无法读取。');showToast('存档不兼容');return}
+  cells.forEach((c,i)=>{const d=s.cells[i];if(d)Object.assign(c,d)});
+  game.clock=s.clock;game.time=s.time;game.phase=s.phase;game.counterOrders=s.counterOrders;
+  game.fallen=!!s.fallen;game.lastStand=(s.lastStand===undefined?LASTSTAND:s.lastStand);
+  document.getElementById('clockLabel').textContent=game.fallen?'最后抵抗':'倒计时';
+  game.mode=s.mode||'hold';game.commit=s.commit||55;game.commands=s.commands||[];game.redShockUntil=0;game.drag=null;game.selected=null;game.pending=null;
+  game.over=false;game.paused=false;game.win=null;
+  document.getElementById('gameOver').classList.remove('show');
+  document.getElementById('pauseBtn').textContent='暂停';
+  document.getElementById('commit').value=game.commit;
+  document.getElementById('commitValue').textContent=game.commit+'%';
+  document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===game.mode));
+  updateAimUI();
+  if(game.clock<=0&&!game.fallen){writeLog('存档时间已到，直接判定胜负。');assess()}
+  else writeLog('已读取保存的战局（'+(game.fallen?'最后抵抗 ':'倒计时 ')+clockText(game.fallen?game.lastStand:game.clock)+'）。');
+  renderAll();
+}
+document.getElementById('saveBtn').addEventListener('click',saveGame);
+document.getElementById('loadBtn').addEventListener('click',loadGame);
+
+/* ================= 主循环 ================= */
+let last=performance.now(),acc=0;
+function renderAll(){draw();updateStats()}
+function updatePhase(){
+  if(game.fallen)return;
+  if(game.phase===1&&game.clock<=PHASE2){game.phase=2;game.counterOrders=1;writeLog('01:15：反攻令 1 道已下达，可切换“反攻”模式画线突击。');showToast('反攻令已下达！')}
+  else if(game.phase===2&&game.clock<=30&&game.counterOrders===0&&!game.gotLast){game.gotLast=true;game.counterOrders=1;writeLog('00:30：最后一道反攻令已下达。');showToast('最后一道反攻令')}
+}
+function loop(now){
+  const raw=Math.min(.25,(now-last)/1000);last=now;
+  if(!game.paused&&!game.over){
+    if(game.fallen)game.lastStand=Math.max(0,game.lastStand-raw);
+    else game.clock=Math.max(0,game.clock-raw);
+    updatePhase();
+    acc+=raw*game.speed;
+    let guard=0;
+    while(acc>=.12&&!game.over&&guard++<40){step(.12);acc-=.12}
+    if(!game.over&&!game.fallen&&game.clock<=0)assess();
+    if(!game.over&&game.fallen&&game.lastStand<=0)finishByIdle();
+  }
+  renderAll();requestAnimationFrame(loop);
+}
+
+/* ================= 启动 ================= */
+buildWorld();
+fitCanvas();
+updateAimUI();
+writeLog('战役开始：共军自浦口、紫金山、雨花台三路渡江围攻南京，国军据城固守两分半。');
+writeLog('胜负：核心区（总统府）不失、城内控制≥70% 即守住南京；南京一旦沦陷，战斗不结束——残部打到被全歼为止。');
+renderAll();
+requestAnimationFrame(loop);
+
+/* 视口变化重排 */
+let rzTimer=null;
+function scheduleFit(){clearTimeout(rzTimer);rzTimer=setTimeout(fitCanvas,120)}
+window.addEventListener('resize',scheduleFit);
+window.addEventListener('orientationchange',()=>setTimeout(fitCanvas,320));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
+
+/* ================= 自检推演（用 #selftest 打开时执行，不影响正常游戏） ================= */
+function sjReset(){
+  cells.length=0;byIndex.fill(null);
+  lists.city.length=0;lists.wall.length=0;lists.core.length=0;lists.stage.forEach(a=>a.length=0);lists.red0=[];
+  Object.assign(game,{mode:'hold',commit:55,paused:true,speed:1,time:0,clock:LIMIT,aiTimer:.2,over:false,win:null,commands:[],
+    selected:null,drag:null,pending:null,counterOrders:0,phase:1,redShockUntil:0,nextWave:45,waveNo:1,gotLast:false,flowTimer:0,
+    fallen:false,lastStand:LASTSTAND});
+  buildWorld();
+}
+function sjNearRed(c){let m=1e9;for(const r of cells)if(r.owner==='red'){const d=Math.hypot(r.cx-c.cx,r.cy-c.cy);if(d<m)m=d}return m}
+function sjDefend(){
+  game.commands=[];
+  const hot=lists.wall.filter(c=>c.owner==='blue').map(c=>({c,d:sjNearRed(c)})).sort((a,b)=>a.d-b.d).slice(0,14).map(o=>o.c);
+  if(hot.length){const half=Math.ceil(hot.length/2);
+    for(let k=0;k<2;k++){const g=hot.slice(k*half,(k+1)*half);if(!g.length)continue;
+      game.commands.push({x1:g[0].cx,y1:g[0].cy,x2:g[g.length-1].cx,y2:g[g.length-1].cy,mode:'hold',commit:85})}}
+  const core=lists.core[0];
+  game.commands.push({x1:core.cx-90,y1:core.cy,x2:core.cx+90,y2:core.cy,mode:'reinforce',commit:70});
+}
+function sjCounter(){
+  if(game.counterOrders<=0)return;
+  let best=-1,bf=2;lists.stage.forEach((s,i)=>{const f=frac('red',s);if(f<bf){bf=f;best=i}});
+  const target=staging[best];let from=null,fd=1e9;
+  for(const c of cells)if(c.owner==='blue'){const d=Math.hypot(c.cx-target.x,c.cy-target.y);if(d<fd){fd=d;from=c}}
+  if(!from)return;
+  const dx=target.x-from.cx,dy=target.y-from.cy,l=Math.hypot(dx,dy)||1,len=Math.min(l,160);
+  const x2=from.cx+dx/l*len,y2=from.cy+dy/l*len;
+  game.commands.push({x1:from.cx,y1:from.cy,x2,y2,mode:'counter',commit:85,until:game.time+45});
+  game.counterOrders--;game.redShockUntil=game.time+16;
+  for(const c of cells)if(c.owner==='red'&&pointSegDist(c.cx,c.cy,from.cx,from.cy,x2,y2)<86)c.army*=0.9;
+}
+function sjRun(policy){
+  sjReset();
+  let lostBlue=0,hitsBlue=0;
+  const oc=capture,of=fightCell;
+  capture=function(t,a,s){if(t.owner==='blue'&&a==='red')lostBlue++;return oc(t,a,s)};
+  fightCell=function(s,t,a,send,p){if(t.owner==='blue'&&a==='red')hitsBlue++;return of(s,t,a,send,p)};
+  const rows=[];let n=0,nextOrder=0;
+  while(!game.over&&n<4200){
+    if(game.fallen){game.lastStand=Math.max(0,game.lastStand-0.12);if(game.lastStand<=0){finishByIdle();break}}
+    else{game.clock=Math.max(0,game.clock-0.12);if(game.clock<=0){assess();break}}
+    updatePhase();
+    if(policy!=='idle'&&game.time>=nextOrder){nextOrder=game.time+18;
+      if(game.commands.length>3)game.commands=game.commands.filter(c=>c.mode==='counter');
+      sjDefend();if(policy==='counter'&&game.phase===2)sjCounter();}
+    step(0.12);n++;
+    if(n%150===0){
+      let contact=0;for(const c of cells)if(c.owner==='red'&&c.neighbors.some(x=>x.owner==='blue'))contact++;
+      rows.push([+game.time.toFixed(0),game.fallen?'F':'-',countOwner('blue'),contact,hitsBlue,lostBlue,Math.round(armyOwner('blue'))]);
+      hitsBlue=0;lostBlue=0;
+    }
+  }
+  capture=oc;fightCell=of;
+  if(!game.over)finishByIdle();
+  return {policy,win:game.win,fallen:game.fallen,used:+game.time.toFixed(0),left:countOwner('blue'),why:document.getElementById('endText').textContent,rows};
+}
+if(location.hash==='#selftest'||location.search.indexOf('selftest')>=0){
+  game.paused=true;
+  setTimeout(()=>{
+    const res=[sjRun('idle'),sjRun('defend'),sjRun('counter')];
+    try{localStorage.setItem('nj-selftest',JSON.stringify(res))}catch(e){}
+    document.title='TEST '+JSON.stringify(res.map(r=>[r.policy,r.win,r.fallen,r.used,r.left]));
+    sjReset();game.commands=[{x1:lists.wall[0].cx,y1:lists.wall[0].cy,x2:lists.wall[10].cx,y2:lists.wall[10].cy,mode:'hold',commit:70}];
+    fitCanvas();renderAll();
+  },60);
+}
+</script>
+</body>
+</html>
